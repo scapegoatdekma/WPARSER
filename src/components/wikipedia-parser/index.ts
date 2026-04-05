@@ -1,0 +1,1 @@
+export { WikipediaParserClient } from "./WikipediaParserClient";
