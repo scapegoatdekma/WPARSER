@@ -1,6 +1,8 @@
 import type { WikiParseResult } from "@/lib/wikipedia/types";
+import type { WikiNetworkResult } from "@/lib/wikipedia/network-types";
 import { ArticleMeta } from "./ArticleMeta";
 import { ArticlePreview } from "./ArticlePreview";
+import { NetworkView } from "./NetworkView";
 import { PersonMeta } from "./PersonMeta";
 import { PersonPreview } from "./PersonPreview";
 import type { Tab } from "./types";
@@ -9,10 +11,18 @@ function ResultView({
   result,
   activeTab,
   onTabChange,
+  network,
+  networkLoading,
+  networkError,
+  onRetryNetwork,
 }: {
   result: WikiParseResult;
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
+  network: WikiNetworkResult | null;
+  networkLoading: boolean;
+  networkError: string | null;
+  onRetryNetwork: () => void;
 }) {
   const isPerson = result.type === "person";
 
@@ -49,14 +59,29 @@ function ResultView({
           >
             JSON
           </button>
+          <button
+            className={`tab-btn ${activeTab === "network" ? "active" : ""}`}
+            onClick={() => onTabChange("network")}
+          >
+            Сеть
+          </button>
         </div>
 
         {activeTab === "preview" ? (
           <div className="preview-content">
             {isPerson ? <PersonPreview result={result} /> : <ArticlePreview result={result} />}
           </div>
-        ) : (
+        ) : activeTab === "json" ? (
           <div className="json-view">{JSON.stringify(result, null, 2)}</div>
+        ) : (
+          <div className="network-content">
+            <NetworkView
+              network={network}
+              loading={networkLoading}
+              error={networkError}
+              onRetry={onRetryNetwork}
+            />
+          </div>
         )}
       </div>
     </div>

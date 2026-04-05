@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { WikiParseResult } from "@/lib/wikipedia/types";
+import type { WikiNetworkResult } from "@/lib/wikipedia/network-types";
 import { EXAMPLE_URLS } from "./constants";
 import { ResultView } from "./ResultView";
 import type { Tab } from "./types";
@@ -12,12 +13,18 @@ function WikipediaParserClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("preview");
+  const [network, setNetwork] = useState<WikiNetworkResult | null>(null);
+  const [networkLoading, setNetworkLoading] = useState(false);
+  const [networkError, setNetworkError] = useState<string | null>(null);
 
   const handleParse = async (targetUrl = url) => {
     if (!targetUrl.trim()) return;
     setLoading(true);
     setError(null);
     setResult(null);
+    setNetwork(null);
+    setNetworkError(null);
+    setNetworkLoading(false);
 
     try {
       const res = await fetch(`/api/parse-wikipedia?url=${encodeURIComponent(targetUrl.trim())}`);
@@ -35,6 +42,43 @@ function WikipediaParserClient() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadNetwork = async (sourceUrl: string) => {
+    if (networkLoading) return;
+
+    setNetworkLoading(true);
+    setNetworkError(null);
+    try {
+      const res = await fetch(
+        `/api/parse-wikipedia/network?url=${encodeURIComponent(sourceUrl)}&limit=16`,
+      );
+      const data = (await res.json()) as WikiNetworkResult & { error?: string };
+
+      if (!res.ok) {
+        setNetworkError(data.error ?? `HTTP ${res.status}`);
+        return;
+      }
+
+      setNetwork(data);
+    } catch (err) {
+      setNetworkError(err instanceof Error ? err.message : "Ошибка сети");
+    } finally {
+      setNetworkLoading(false);
+    }
+  };
+
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+
+    if (tab === "network" && result && !network) {
+      void loadNetwork(result.sourceUrl);
+    }
+  };
+
+  const handleRetryNetwork = () => {
+    if (!result) return;
+    void loadNetwork(result.sourceUrl);
   };
 
   const handleExample = (exampleUrl: string) => {
@@ -84,7 +128,15 @@ function WikipediaParserClient() {
       {error ? <div className="error-box">Ошибка: {error}</div> : null}
 
       {result ? (
-        <ResultView result={result} activeTab={activeTab} onTabChange={setActiveTab} />
+        <ResultView
+          result={result}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          network={network}
+          networkLoading={networkLoading}
+          networkError={networkError}
+          onRetryNetwork={handleRetryNetwork}
+        />
       ) : null}
     </div>
   );

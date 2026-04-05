@@ -1,1 +1,1 @@
-export type Tab = "preview" | "json";
+export type Tab = "preview" | "json" | "network";

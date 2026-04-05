@@ -12,8 +12,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ru">
-      <body>{children}</body>
+    // Подавляем hydration-warning для атрибутов, которые могут добавить расширения браузера.
+    <html lang="ru" suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
